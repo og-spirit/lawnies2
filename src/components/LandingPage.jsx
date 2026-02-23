@@ -17,12 +17,6 @@ const LandingPage = () => {
             className="h-9 w-auto"
           />
         </div>
-        <a
-          href="#pricing"
-          className="px-4 py-2 bg-emerald-500 text-white text-sm font-bold rounded-lg hover:bg-emerald-600 transition-colors"
-        >
-          Operator Login
-        </a>
       </nav>
 
       {/* ─── HERO ────────────────────────────────────────────────────── */}
@@ -54,7 +48,7 @@ const LandingPage = () => {
           </p>
           <div className="flex flex-col items-center gap-2">
             <a
-              href="#pricing"
+              href="/signup"
               className="inline-flex items-center gap-2 px-8 py-4 bg-emerald-500 text-white text-lg font-bold rounded-xl hover:bg-emerald-600 hover:-translate-y-0.5 transition-all shadow-md hover:shadow-xl"
             >
               Install my Receptionist
@@ -157,7 +151,7 @@ const LandingPage = () => {
               </div>
             </div>
             <a
-              href="#pricing"
+              href="/signup"
               className="inline-flex items-center gap-2 px-8 py-5 bg-emerald-500 text-white text-lg font-bold rounded-xl hover:bg-emerald-600 hover:-translate-y-0.5 transition-all shadow-md hover:shadow-xl"
             >
               Install My Receptionist
@@ -293,7 +287,7 @@ const LandingPage = () => {
             </div>
             <div className="px-6 py-6 flex flex-col gap-3">
               <a
-                href="mailto:stefan@lawnies.com.au"
+                href="/signup"
                 className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-emerald-500 text-white text-lg font-bold rounded-xl hover:bg-emerald-600 hover:-translate-y-0.5 transition-all shadow-md hover:shadow-xl"
               >
                 Get my calls covered
