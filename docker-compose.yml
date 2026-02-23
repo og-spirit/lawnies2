@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-lawnies2}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-lawnies2}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: ${DOCKERHUB_USERNAME}/lawnies2:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-lawnies2}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_URL=${AUTH_URL}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+      - SETTINGS_ENCRYPTION_KEY=${SETTINGS_ENCRYPTION_KEY}
+      - STRIPE_SECRET_KEY_TEST=${STRIPE_SECRET_KEY_TEST:-}
+      - STRIPE_SECRET_KEY_LIVE=${STRIPE_SECRET_KEY_LIVE:-}
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_TEST=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_TEST:-}
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_LIVE=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_LIVE:-}
+      - STRIPE_WEBHOOK_SECRET_TEST=${STRIPE_WEBHOOK_SECRET_TEST:-}
+      - STRIPE_WEBHOOK_SECRET_LIVE=${STRIPE_WEBHOOK_SECRET_LIVE:-}
+      - STRIPE_PRICE_ID_TEST=${STRIPE_PRICE_ID_TEST:-}
+      - STRIPE_PRICE_ID_LIVE=${STRIPE_PRICE_ID_LIVE:-}
+      - APP_ENV=${APP_ENV:-staging}
+    networks:
+      - web
+      - app-network
+    expose:
+      - "3000"
+
+networks:
+  web:
+    external: true
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

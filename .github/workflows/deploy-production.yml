@@ -1,0 +1,134 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "production" to confirm deployment'
+        required: true
+        type: string
+
+jobs:
+  validate:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        if: github.event.inputs.confirm != 'production'
+        run: |
+          echo "Deployment cancelled. You must type 'production' to confirm."
+          exit 1
+
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/lawnies2:production-${{ github.sha }},${{ secrets.DOCKERHUB_USERNAME }}/lawnies2:production-latest
+          build-args: |
+            CACHE_BUST=${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/lawnies2:production-latest
+          cache-to: type=inline
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
+
+      - name: Add host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.PROD_SSH_HOST }} >> ~/.ssh/known_hosts 2>&1 || true
+          chmod 600 ~/.ssh/known_hosts || true
+
+      - name: Deploy to production server
+        env:
+          IMAGE_TAG: production-${{ github.sha }}
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=60 -o ServerAliveCountMax=120 ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'ENDSSH'
+            cd ${{ secrets.PROD_DEPLOY_PATH }}
+
+            # Pull latest code (for docker-compose files)
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Write .env from secret
+            if [ -n "${{ secrets.PROD_ENV_FILE }}" ]; then
+              echo "${{ secrets.PROD_ENV_FILE }}" | base64 -d > .env
+            else
+              echo "Warning: PROD_ENV_FILE not set, using existing .env if present"
+            fi
+
+            export IMAGE_TAG=${{ env.IMAGE_TAG }}
+            export DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+
+            # Pull new image and recreate app container
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull app
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate app
+
+            # Wait for database to be ready
+            echo "Waiting for database..."
+            sleep 10
+
+            # Run migrations
+            echo "Running migrations..."
+            if [ -f .env ]; then
+              export $(cat .env | grep -v '^#' | xargs)
+            fi
+
+            DB_USER=${POSTGRES_USER:-postgres}
+            DB_NAME=lawnies2_production
+
+            for migration in migrations/*.sql; do
+              if [ -f "$migration" ]; then
+                echo "Running: $(basename $migration)"
+                cat "$migration" | docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres psql -U "$DB_USER" -d "$DB_NAME" || echo "Migration may already be applied: $migration"
+              fi
+            done
+
+            # Restart app to pick up new schema
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml restart app
+
+            # Clean up old images
+            docker image prune -f
+
+            echo "Production deployment complete!"
+          ENDSSH
+
+      - name: Verify deployment
+        run: |
+          sleep 15
+          ssh -o StrictHostKeyChecking=accept-new ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} \
+            "docker ps | grep lawnies2-production && docker ps | grep lawnies2-production-db || echo 'Containers not running!'"
+
+      - name: Notify success
+        run: echo "Production deployment to lawnies.com.au completed successfully!"

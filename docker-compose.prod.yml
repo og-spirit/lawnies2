@@ -1,0 +1,39 @@
+services:
+  postgres:
+    container_name: lawnies2-production-db
+    environment:
+      POSTGRES_DB: lawnies2_production
+    volumes:
+      - lawnies2_production_postgres_data:/var/lib/postgresql/data
+
+  app:
+    image: ${DOCKERHUB_USERNAME}/lawnies2:${IMAGE_TAG:-production-latest}
+    container_name: lawnies2-production
+    environment:
+      - APP_ENV=production
+      - AUTH_URL=https://lawnies.com.au
+      - NEXT_PUBLIC_APP_URL=https://lawnies.com.au
+    labels:
+      - "traefik.enable=true"
+      # HTTPS Router
+      - "traefik.http.routers.lawnies2-prod.rule=Host(`lawnies.com.au`) || Host(`www.lawnies.com.au`)"
+      - "traefik.http.routers.lawnies2-prod.entrypoints=websecure"
+      - "traefik.http.routers.lawnies2-prod.tls=true"
+      - "traefik.http.routers.lawnies2-prod.tls.certresolver=myresolver"
+      # HTTP Router (redirect to HTTPS)
+      - "traefik.http.routers.lawnies2-prod-http.rule=Host(`lawnies.com.au`) || Host(`www.lawnies.com.au`)"
+      - "traefik.http.routers.lawnies2-prod-http.entrypoints=web"
+      - "traefik.http.routers.lawnies2-prod-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      # WWW to non-WWW redirect
+      - "traefik.http.middlewares.lawnies2-www-redirect.redirectregex.regex=^https://www\\.lawnies\\.com\\.au/(.*)"
+      - "traefik.http.middlewares.lawnies2-www-redirect.redirectregex.replacement=https://lawnies.com.au/$${1}"
+      - "traefik.http.middlewares.lawnies2-www-redirect.redirectregex.permanent=true"
+      - "traefik.http.routers.lawnies2-prod.middlewares=lawnies2-www-redirect"
+      # Service
+      - "traefik.http.services.lawnies2-prod.loadbalancer.server.port=3000"
+      - "traefik.http.services.lawnies2-prod.loadbalancer.passHostHeader=true"
+      - "traefik.docker.network=web"
+
+volumes:
+  lawnies2_production_postgres_data:

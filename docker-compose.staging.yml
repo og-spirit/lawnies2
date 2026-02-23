@@ -1,0 +1,34 @@
+services:
+  postgres:
+    container_name: lawnies2-staging-db
+    environment:
+      POSTGRES_DB: lawnies2_staging
+    volumes:
+      - lawnies2_staging_postgres_data:/var/lib/postgresql/data
+
+  app:
+    image: ${DOCKERHUB_USERNAME}/lawnies2:${IMAGE_TAG:-staging-latest}
+    container_name: lawnies2-staging
+    environment:
+      - APP_ENV=staging
+      - AUTH_URL=https://stage2.lawnies.com.au
+      - NEXT_PUBLIC_APP_URL=https://stage2.lawnies.com.au
+    labels:
+      - "traefik.enable=true"
+      # HTTPS Router
+      - "traefik.http.routers.lawnies2-staging.rule=Host(`stage2.lawnies.com.au`)"
+      - "traefik.http.routers.lawnies2-staging.entrypoints=websecure"
+      - "traefik.http.routers.lawnies2-staging.tls=true"
+      - "traefik.http.routers.lawnies2-staging.tls.certresolver=myresolver"
+      # HTTP Router (redirect to HTTPS)
+      - "traefik.http.routers.lawnies2-staging-http.rule=Host(`stage2.lawnies.com.au`)"
+      - "traefik.http.routers.lawnies2-staging-http.entrypoints=web"
+      - "traefik.http.routers.lawnies2-staging-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      # Service
+      - "traefik.http.services.lawnies2-staging.loadbalancer.server.port=3000"
+      - "traefik.http.services.lawnies2-staging.loadbalancer.passHostHeader=true"
+      - "traefik.docker.network=web"
+
+volumes:
+  lawnies2_staging_postgres_data:
