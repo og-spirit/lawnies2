@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { FormSection } from "@/app/api/welcome/config/route";
+import type { FormSection } from "@/lib/welcome-sections";
 
 export function WelcomeSettingsForm({
   initialTitle,

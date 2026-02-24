@@ -1,9 +1,6 @@
 import { getSettingsByCategory } from "@/lib/queries/settings";
 import { WelcomeSettingsForm } from "./form";
-import {
-  DEFAULT_FORM_SECTIONS,
-  type FormSection,
-} from "@/app/api/welcome/config/route";
+import { DEFAULT_FORM_SECTIONS, type FormSection } from "@/lib/welcome-sections";
 
 export default async function WelcomeSettingsPage() {
   const settings = await getSettingsByCategory("welcome");
