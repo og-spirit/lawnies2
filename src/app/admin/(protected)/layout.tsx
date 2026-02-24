@@ -48,6 +48,12 @@ export default async function AdminLayout({
           >
             Welcome Settings
           </Link>
+          <Link
+            href="/admin/settings/complete"
+            className="text-slate-300 hover:text-white transition-colors"
+          >
+            Complete Settings
+          </Link>
           <SignOutButton />
         </nav>
       </header>

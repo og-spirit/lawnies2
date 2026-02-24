@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import type { FormSection } from "@/lib/welcome-sections";
 
 function renderWithLinks(text: string) {
@@ -42,10 +42,10 @@ interface WelcomeConfig {
 function WelcomeContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
+  const router = useRouter();
 
   const [config, setConfig] = useState<WelcomeConfig | null>(null);
   const [responses, setResponses] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -107,8 +107,7 @@ function WelcomeContent() {
       });
 
       if (res.ok) {
-        setSubmitted(true);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        router.push("/complete");
       } else {
         setSubmitError("Something went wrong saving your setup. Please try again.");
       }
@@ -123,24 +122,6 @@ function WelcomeContent() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-slate-500">Loading…</div>
-      </div>
-    );
-  }
-
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-white font-sans">
-        <nav className="w-full px-6 py-4 flex items-center justify-between border-b border-slate-200 bg-white sticky top-0 z-50">
-          <img src="/lawnies_logo.svg" alt="Lawnies" className="h-9 w-auto" />
-          <span className="text-sm text-slate-500">Welcome page</span>
-        </nav>
-        <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
-          <div className="text-5xl mb-6">✅</div>
-          <h1 className="text-3xl font-black text-slate-900 mb-3">Setup complete!</h1>
-          <p className="text-slate-500 max-w-md">
-            We&apos;ll personally configure your receptionist and confirm once everything is ready.
-          </p>
-        </div>
       </div>
     );
   }
