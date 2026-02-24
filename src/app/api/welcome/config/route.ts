@@ -30,6 +30,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       title: settings.title || "Welcome to Lawnies",
       content: settings.content || "",
+      sub_text_1: settings.sub_text_1 || "This takes about 5–10 minutes. The more detail you include, the better we can tailor everything to your business.",
+      sub_text_2: settings.sub_text_2 || "You don't need to get this perfect. We'll review everything and fine-tune it with you if needed.",
       video_url: settings.video_url || "",
       show_video: settings.show_video !== "false",
       form_sections,

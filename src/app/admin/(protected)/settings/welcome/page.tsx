@@ -27,6 +27,8 @@ export default async function WelcomeSettingsPage() {
         <WelcomeSettingsForm
           initialTitle={settings.title || ""}
           initialContent={settings.content || ""}
+          initialSubText1={settings.sub_text_1 || ""}
+          initialSubText2={settings.sub_text_2 || ""}
           initialVideoUrl={settings.video_url || ""}
           initialShowVideo={settings.show_video !== "false"}
           initialSections={formSections}

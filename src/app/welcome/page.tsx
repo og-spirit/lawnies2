@@ -9,6 +9,8 @@ const GHL_WEBHOOK_URL = "https://services.leadconnectorhq.com/hooks/7AWfKrsJ8yR6
 interface WelcomeConfig {
   title: string;
   content: string;
+  sub_text_1: string;
+  sub_text_2: string;
   video_url: string;
   show_video: boolean;
   form_sections: FormSection[];
@@ -147,12 +149,16 @@ function WelcomeContent() {
             {config?.content && (
               <p className="text-lg text-slate-600 mb-4">{config.content}</p>
             )}
-            <p className="text-sm text-slate-500 max-w-sm mx-auto">
-              This takes about 5–10 minutes. The more detail you include, the better we can tailor everything to your business.
-            </p>
-            <p className="text-sm text-slate-400 max-w-sm mx-auto mt-2">
-              You don&apos;t need to get this perfect. We&apos;ll review everything and fine-tune it with you if needed.
-            </p>
+            {config?.sub_text_1 && (
+              <p className="text-sm text-slate-500 max-w-sm mx-auto">
+                {config.sub_text_1}
+              </p>
+            )}
+            {config?.sub_text_2 && (
+              <p className="text-sm text-slate-400 max-w-sm mx-auto mt-2">
+                {config.sub_text_2}
+              </p>
+            )}
           </div>
 
           {/* Gumlet video */}

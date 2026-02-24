@@ -9,15 +9,21 @@ export function WelcomeSettingsForm({
   initialVideoUrl,
   initialShowVideo,
   initialSections,
+  initialSubText1,
+  initialSubText2,
 }: {
   initialTitle: string;
   initialContent: string;
   initialVideoUrl: string;
   initialShowVideo: boolean;
   initialSections: FormSection[];
+  initialSubText1: string;
+  initialSubText2: string;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
+  const [subText1, setSubText1] = useState(initialSubText1);
+  const [subText2, setSubText2] = useState(initialSubText2);
   const [videoUrl, setVideoUrl] = useState(initialVideoUrl);
   const [showVideo, setShowVideo] = useState(initialShowVideo);
   const [sections, setSections] = useState<FormSection[]>(initialSections);
@@ -92,6 +98,8 @@ export function WelcomeSettingsForm({
         body: JSON.stringify({
           title,
           content,
+          sub_text_1: subText1,
+          sub_text_2: subText2,
           video_url: videoUrl,
           show_video: String(showVideo),
           form_sections: JSON.stringify(sections),
@@ -140,6 +148,32 @@ export function WelcomeSettingsForm({
             rows={2}
             placeholder="Let's set up your receptionist so you never miss a booking."
             className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
+            Sub-text line 1
+          </label>
+          <input
+            type="text"
+            value={subText1}
+            onChange={(e) => setSubText1(e.target.value)}
+            placeholder="This takes about 5–10 minutes…"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
+            Sub-text line 2
+          </label>
+          <input
+            type="text"
+            value={subText2}
+            onChange={(e) => setSubText2(e.target.value)}
+            placeholder="You don't need to get this perfect…"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400"
           />
         </div>
       </div>
