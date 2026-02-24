@@ -4,6 +4,24 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import type { FormSection } from "@/lib/welcome-sections";
 
+function renderWithLinks(text: string) {
+  const result: React.ReactNode[] = [];
+  const regex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let lastIndex = 0;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) result.push(text.slice(lastIndex, match.index));
+    result.push(
+      <a key={match.index} href={match[2]} className="text-emerald-600 underline hover:text-emerald-700">
+        {match[1]}
+      </a>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) result.push(text.slice(lastIndex));
+  return result;
+}
+
 const GHL_WEBHOOK_URL = "https://services.leadconnectorhq.com/hooks/7AWfKrsJ8yR6Hg3YR8UM/webhook-trigger/fbc7825f-af9d-4281-b930-5e35f2422f6c";
 
 interface WelcomeConfig {
@@ -141,7 +159,7 @@ function WelcomeContent() {
           {/* Header */}
           <div className="text-center">
             <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">
-              Step 1 of 1: Welcome
+              Step 1 of 2: Welcome
             </p>
             <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-3">
               {config?.title || "Welcome to Lawnies"}
@@ -151,12 +169,12 @@ function WelcomeContent() {
             )}
             {config?.sub_text_1 && (
               <p className="text-sm text-slate-500 max-w-sm mx-auto">
-                {config.sub_text_1}
+                {renderWithLinks(config.sub_text_1)}
               </p>
             )}
             {config?.sub_text_2 && (
-              <p className="text-sm text-slate-400 max-w-sm mx-auto mt-2">
-                {config.sub_text_2}
+              <p className="text-sm text-slate-500 max-w-sm mx-auto mt-2">
+                {renderWithLinks(config.sub_text_2)}
               </p>
             )}
           </div>
