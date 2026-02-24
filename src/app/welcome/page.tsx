@@ -9,7 +9,12 @@ interface WelcomeConfig {
   title: string;
   content: string;
   video_url: string;
-  onboarding_questions: string[];
+  show_video: boolean;
+  operator: {
+    email: string;
+    business_name: string;
+    phone: string;
+  } | null;
 }
 
 function WelcomeContent() {
@@ -17,7 +22,15 @@ function WelcomeContent() {
   const sessionId = searchParams.get("session_id");
 
   const [config, setConfig] = useState<WelcomeConfig | null>(null);
-  const [responses, setResponses] = useState<Record<string, string>>({});
+  const [formData, setFormData] = useState({
+    services: "",
+    pricing: "",
+    service_areas: "",
+    working_hours: "",
+    booking_rules: "",
+    caller_details: "",
+    escalations: "",
+  });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -43,14 +56,23 @@ function WelcomeContent() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/welcome/config")
+    const url = sessionId
+      ? `/api/welcome/config?session_id=${encodeURIComponent(sessionId)}`
+      : "/api/welcome/config";
+    fetch(url)
       .then((res) => res.json())
       .then((data) => {
         setConfig(data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [sessionId]);
+
+  const handleChange =
+    (field: keyof typeof formData) =>
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+    };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,13 +83,14 @@ function WelcomeContent() {
       const res = await fetch("/api/welcome/survey", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, responses }),
+        body: JSON.stringify({ session_id: sessionId, ...formData }),
       });
 
       if (res.ok) {
         setSubmitted(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
-        setSubmitError("Something went wrong saving your responses. Please try again.");
+        setSubmitError("Something went wrong saving your setup. Please try again.");
       }
     } catch {
       setSubmitError("Network error. Please try again.");
@@ -84,32 +107,57 @@ function WelcomeContent() {
     );
   }
 
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-white font-sans">
+        <nav className="w-full px-6 py-4 flex items-center justify-between border-b border-slate-200 bg-white sticky top-0 z-50">
+          <img src="/lawnies_logo.svg" alt="Lawnies" className="h-9 w-auto" />
+          <span className="text-sm text-slate-500">Welcome page</span>
+        </nav>
+        <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
+          <div className="text-5xl mb-6">✅</div>
+          <h1 className="text-3xl font-black text-slate-900 mb-3">Setup complete!</h1>
+          <p className="text-slate-500 max-w-md">
+            We&apos;ll personally configure your receptionist and confirm once everything is ready.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-      <nav className="w-full px-6 py-4 flex items-center border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+    <div className="min-h-screen bg-white font-sans">
+      {/* Nav */}
+      <nav className="w-full px-6 py-4 flex items-center justify-between border-b border-slate-200 bg-white sticky top-0 z-50">
         <img src="/lawnies_logo.svg" alt="Lawnies" className="h-9 w-auto" />
+        <span className="text-sm text-slate-500">Welcome page</span>
       </nav>
 
       <main className="px-6 py-12 md:py-16">
-        <div className="w-full max-w-3xl mx-auto space-y-10">
-          {/* Welcome header */}
-          <section className="text-center">
-            <div className="inline-block bg-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-4">
-              You&apos;re in!
-            </div>
-            <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4">
+        <div className="w-full max-w-xl mx-auto space-y-8">
+
+          {/* Header */}
+          <div className="text-center">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">
+              Step 1 of 1: Welcome
+            </p>
+            <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-3">
               {config?.title || "Welcome to Lawnies"}
             </h1>
             {config?.content && (
-              <p className="text-lg text-slate-600 max-w-xl mx-auto">
-                {config.content}
-              </p>
+              <p className="text-lg text-slate-600 mb-4">{config.content}</p>
             )}
-          </section>
+            <p className="text-sm text-slate-500 max-w-sm mx-auto">
+              This takes about 5–10 minutes. The more detail you include, the better we can tailor everything to your business.
+            </p>
+            <p className="text-sm text-slate-400 max-w-sm mx-auto mt-2">
+              You don&apos;t need to get this perfect. We&apos;ll review everything and fine-tune it with you if needed.
+            </p>
+          </div>
 
-          {/* Video */}
-          {config?.video_url && (
-            <section className="rounded-2xl overflow-hidden shadow-lg bg-black aspect-video">
+          {/* Gumlet video */}
+          {config?.show_video && config?.video_url && (
+            <div className="rounded-2xl overflow-hidden shadow-lg bg-black aspect-video">
               <iframe
                 src={config.video_url}
                 width="100%"
@@ -119,109 +167,190 @@ function WelcomeContent() {
                 allowFullScreen
                 className="w-full h-full"
               />
-            </section>
+            </div>
           )}
 
-          {/* Onboarding survey */}
-          {config?.onboarding_questions &&
-            config.onboarding_questions.length > 0 && (
-              <section className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 md:p-8">
-                {!submitted ? (
-                  <>
-                    <h2 className="text-2xl font-black text-slate-900 mb-2">
-                      Quick setup questions
-                    </h2>
-                    <p className="text-slate-500 text-sm mb-6">
-                      Help us configure your receptionist perfectly.
-                    </p>
+          {/* Account Summary */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6">
+            <h2 className="text-base font-black text-slate-900 mb-1">Account Summary</h2>
+            <p className="text-xs text-slate-400 mb-5">These details are already saved.</p>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">
+                  Account Email
+                </p>
+                <p className="text-sm font-semibold text-slate-800">
+                  {config?.operator?.email || "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">
+                  Business Name
+                </p>
+                <p className="text-sm font-semibold text-slate-800">
+                  {config?.operator?.business_name || "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">
+                  Phone Number
+                </p>
+                <p className="text-sm font-semibold text-slate-800">
+                  {config?.operator?.phone || "—"}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 mt-4">
+              Need to update these?{" "}
+              <a
+                href="mailto:stefan@lawnies.com.au"
+                className="text-emerald-600 hover:underline"
+              >
+                Contact support.
+              </a>
+            </p>
+          </div>
 
-                    {submitError && (
-                      <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
-                        {submitError}
-                      </div>
-                    )}
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                      {config.onboarding_questions.map((question, index) => (
-                        <div key={index}>
-                          <label className="block text-sm font-semibold text-slate-700 mb-2">
-                            {question}
-                          </label>
-                          <input
-                            type="text"
-                            value={responses[String(index)] || ""}
-                            onChange={(e) =>
-                              setResponses((prev) => ({
-                                ...prev,
-                                [String(index)]: e.target.value,
-                              }))
-                            }
-                            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400"
-                            placeholder="Your answer…"
-                          />
-                        </div>
-                      ))}
+            {/* Services & Pricing */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5">
+              <h2 className="text-base font-black text-slate-900">Services &amp; Pricing</h2>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-2">
+                  Services you offer
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.services}
+                  onChange={handleChange("services")}
+                  placeholder="Example: Lawn mowing, edging, weed control, green waste removal"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-2">
+                  How you normally price jobs
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.pricing}
+                  onChange={handleChange("pricing")}
+                  placeholder="Example: Minimum callout $120. Standard mow from $150 up to 400sqm. Add $40 for overgrown lawns."
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
+                />
+              </div>
+            </div>
 
-                      <div className="pt-2">
-                        <button
-                          type="submit"
-                          disabled={submitting}
-                          className="w-full inline-flex items-center justify-center rounded-xl bg-emerald-500 px-6 py-4 text-base font-bold text-white hover:bg-emerald-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                          {submitting ? "Saving…" : "Submit answers"}
-                        </button>
-                      </div>
-                    </form>
-                  </>
-                ) : (
-                  <div className="text-center py-6">
-                    <div className="text-4xl mb-4">✅</div>
-                    <h3 className="text-xl font-black text-slate-900 mb-2">
-                      Thanks! We&apos;ve got your answers.
-                    </h3>
-                    <p className="text-slate-500">
-                      We&apos;ll be in touch within 48 hours to get you set up.
-                    </p>
-                  </div>
-                )}
-              </section>
+            {/* Where & When */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5">
+              <h2 className="text-base font-black text-slate-900">Where &amp; When You Work</h2>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-2">
+                  Service areas / suburbs
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.service_areas}
+                  onChange={handleChange("service_areas")}
+                  placeholder="Example: Perth, Fremantle, Joondalup, Midland, Rockingham"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-2">
+                  Working hours
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.working_hours}
+                  onChange={handleChange("working_hours")}
+                  placeholder="Example: Mon-Fri 7am-5pm, Sat 8am-12pm, Sun closed."
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
+                />
+              </div>
+            </div>
+
+            {/* Booking Rules */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5">
+              <h2 className="text-base font-black text-slate-900">Booking Rules</h2>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-2">
+                  Booking limits or rules
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.booking_rules}
+                  onChange={handleChange("booking_rules")}
+                  placeholder="Example: Minimum 24 hr lead time."
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-2">
+                  Details we should collect from callers
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.caller_details}
+                  onChange={handleChange("caller_details")}
+                  placeholder="Example: Full name, address, mobile, service needed, preferred day/time, access details."
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
+                />
+              </div>
+            </div>
+
+            {/* Escalations */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5">
+              <h2 className="text-base font-black text-slate-900">Escalations</h2>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-2">
+                  When should we alert you immediately?
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.escalations}
+                  onChange={handleChange("escalations")}
+                  placeholder="Example: Urgent cleanups or complaints should be SMSed to me immediately on 0400 123 456."
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
+                />
+              </div>
+            </div>
+
+            {submitError && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                {submitError}
+              </div>
             )}
 
-          {/* Next steps */}
-          <section className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6 md:p-8">
-            <h2 className="text-xl font-black text-slate-900 mb-4">
-              What happens now
-            </h2>
-            <ul className="space-y-3">
-              {[
-                "Our team will contact you within 48 hours",
-                "We'll configure your receptionist with your services and pricing",
-                "You forward your business calls to us",
-                "We go live — you stop missing jobs",
-              ].map((step, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs font-black">
-                    {i + 1}
-                  </span>
-                  <span className="text-slate-700 font-medium">{step}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <p className="text-center text-slate-500 text-sm">
-            Questions? Call us on{" "}
-            <a
-              href="tel:0431847833"
-              className="text-emerald-600 font-semibold hover:underline"
-            >
-              0431 847 833
-            </a>
-          </p>
+            <div>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-4 text-base font-bold text-white hover:bg-emerald-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {submitting ? "Saving…" : "Complete My Setup →"}
+              </button>
+              <p className="mt-3 text-center text-xs text-slate-400">
+                We&apos;ll personally configure your receptionist and confirm once everything is ready.
+              </p>
+            </div>
+          </form>
         </div>
       </main>
 
       <footer className="bg-slate-950 py-6 text-center mt-10">
+        <div className="flex items-center justify-center mb-3">
+          <img
+            src="/lawnies_logo.svg"
+            alt="Lawnies"
+            className="h-7 w-auto"
+            style={{
+              filter: "brightness(0) invert(1) sepia(1) saturate(3) hue-rotate(110deg)",
+            }}
+          />
+        </div>
         <p className="text-slate-500 text-xs">© 2026 Lawnies. All rights reserved.</p>
       </footer>
     </div>

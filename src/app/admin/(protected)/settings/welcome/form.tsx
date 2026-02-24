@@ -6,38 +6,26 @@ export function WelcomeSettingsForm({
   initialTitle,
   initialContent,
   initialVideoUrl,
-  initialQuestions,
+  initialShowVideo,
 }: {
   initialTitle: string;
   initialContent: string;
   initialVideoUrl: string;
-  initialQuestions: string[];
+  initialShowVideo: boolean;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [videoUrl, setVideoUrl] = useState(initialVideoUrl);
-  const [questions, setQuestions] = useState<string[]>(initialQuestions);
+  const [showVideo, setShowVideo] = useState(initialShowVideo);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const addQuestion = () => setQuestions((q) => [...q, ""]);
-
-  const updateQuestion = (index: number, value: string) => {
-    setQuestions((q) => q.map((item, i) => (i === index ? value : item)));
-  };
-
-  const removeQuestion = (index: number) => {
-    setQuestions((q) => q.filter((_, i) => i !== index));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setSaved(false);
     setError(null);
-
-    const filteredQuestions = questions.filter((q) => q.trim() !== "");
 
     try {
       const res = await fetch("/api/admin/settings/welcome", {
@@ -47,12 +35,11 @@ export function WelcomeSettingsForm({
           title,
           content,
           video_url: videoUrl,
-          onboarding_questions: JSON.stringify(filteredQuestions),
+          show_video: String(showVideo),
         }),
       });
 
       if (res.ok) {
-        setQuestions(filteredQuestions);
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
       } else {
@@ -88,69 +75,40 @@ export function WelcomeSettingsForm({
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          rows={3}
-          placeholder="Thanks for signing up! Here's what to expect…"
+          rows={2}
+          placeholder="Let's set up your receptionist so you never miss a booking."
           className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none"
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-2">
-          Gumlet Video Embed URL
-        </label>
-        <input
-          type="url"
-          value={videoUrl}
-          onChange={(e) => setVideoUrl(e.target.value)}
-          placeholder="https://play.gumlet.io/embed/your-video-id"
-          className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400"
-        />
-        <p className="text-xs text-slate-400 mt-1">
-          Paste the Gumlet embed URL (e.g. https://play.gumlet.io/embed/abc123)
-        </p>
-      </div>
-
-      <div className="pt-2 border-t border-slate-100">
-        <div className="flex items-center justify-between mb-3">
-          <label className="text-sm font-semibold text-slate-700">
-            Onboarding Survey Questions
+      <div className="pt-2 border-t border-slate-100 space-y-4">
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
+            Gumlet Video Embed URL
           </label>
-          <button
-            type="button"
-            onClick={addQuestion}
-            className="text-sm text-emerald-600 font-semibold hover:text-emerald-700"
-          >
-            + Add question
-          </button>
-        </div>
-
-        {questions.length === 0 && (
-          <p className="text-slate-400 text-sm italic">
-            No questions yet. Click &quot;Add question&quot; to add one.
+          <input
+            type="url"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            placeholder="https://play.gumlet.io/embed/your-video-id"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400"
+          />
+          <p className="text-xs text-slate-400 mt-1">
+            Paste the Gumlet embed URL (e.g. https://play.gumlet.io/embed/abc123)
           </p>
-        )}
-
-        <div className="space-y-3">
-          {questions.map((q, index) => (
-            <div key={index} className="flex gap-2 items-center">
-              <input
-                type="text"
-                value={q}
-                onChange={(e) => updateQuestion(index, e.target.value)}
-                placeholder={`Question ${index + 1}`}
-                className="flex-1 rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400"
-              />
-              <button
-                type="button"
-                onClick={() => removeQuestion(index)}
-                className="text-slate-400 hover:text-red-500 transition-colors p-2"
-                aria-label="Remove question"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
         </div>
+
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showVideo}
+            onChange={(e) => setShowVideo(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300 text-emerald-500 focus:ring-emerald-300"
+          />
+          <span className="text-sm font-semibold text-slate-700">
+            Show video on welcome page
+          </span>
+        </label>
       </div>
 
       {error && (

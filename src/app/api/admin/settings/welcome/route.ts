@@ -26,7 +26,7 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const allowed = ["title", "content", "video_url", "onboarding_questions"];
+    const allowed = ["title", "content", "video_url", "show_video"];
     const settings: Record<string, string | null> = {};
     for (const key of allowed) {
       if (key in body) {
