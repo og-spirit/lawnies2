@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import type { FormSection } from "@/app/api/welcome/config/route";
 
 const GHL_WEBHOOK_URL = "https://services.leadconnectorhq.com/hooks/7AWfKrsJ8yR6Hg3YR8UM/webhook-trigger/fbc7825f-af9d-4281-b930-5e35f2422f6c";
 
@@ -10,6 +11,7 @@ interface WelcomeConfig {
   content: string;
   video_url: string;
   show_video: boolean;
+  form_sections: FormSection[];
   operator: {
     email: string;
     business_name: string;
@@ -22,15 +24,7 @@ function WelcomeContent() {
   const sessionId = searchParams.get("session_id");
 
   const [config, setConfig] = useState<WelcomeConfig | null>(null);
-  const [formData, setFormData] = useState({
-    services: "",
-    pricing: "",
-    service_areas: "",
-    working_hours: "",
-    booking_rules: "",
-    caller_details: "",
-    escalations: "",
-  });
+  const [responses, setResponses] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -61,18 +55,24 @@ function WelcomeContent() {
       : "/api/welcome/config";
     fetch(url)
       .then((res) => res.json())
-      .then((data) => {
+      .then((data: WelcomeConfig) => {
         setConfig(data);
+        // Initialise response keys from sections
+        const initial: Record<string, string> = {};
+        data.form_sections?.forEach((section, si) => {
+          section.fields.forEach((_, fi) => {
+            initial[`s${si}_f${fi}`] = "";
+          });
+        });
+        setResponses(initial);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [sessionId]);
 
-  const handleChange =
-    (field: keyof typeof formData) =>
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setFormData((prev) => ({ ...prev, [field]: e.target.value }));
-    };
+  const handleChange = (key: string) => (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setResponses((prev) => ({ ...prev, [key]: e.target.value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +83,7 @@ function WelcomeContent() {
       const res = await fetch("/api/welcome/survey", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, ...formData }),
+        body: JSON.stringify({ session_id: sessionId, responses }),
       });
 
       if (res.ok) {
@@ -202,121 +202,33 @@ function WelcomeContent() {
             </div>
             <p className="text-xs text-slate-400 mt-4">
               Need to update these?{" "}
-              <a
-                href="mailto:stefan@lawnies.com.au"
-                className="text-emerald-600 hover:underline"
-              >
+              <a href="mailto:stefan@lawnies.com.au" className="text-emerald-600 hover:underline">
                 Contact support.
               </a>
             </p>
           </div>
 
-          {/* Form */}
+          {/* Dynamic form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-
-            {/* Services & Pricing */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5">
-              <h2 className="text-base font-black text-slate-900">Services &amp; Pricing</h2>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-2">
-                  Services you offer
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.services}
-                  onChange={handleChange("services")}
-                  placeholder="Example: Lawn mowing, edging, weed control, green waste removal"
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
-                />
+            {config?.form_sections?.map((section, si) => (
+              <div key={si} className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5">
+                <h2 className="text-base font-black text-slate-900">{section.title}</h2>
+                {section.fields.map((field, fi) => (
+                  <div key={fi}>
+                    <label className="block text-sm font-medium text-slate-600 mb-2">
+                      {field.label}
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={responses[`s${si}_f${fi}`] || ""}
+                      onChange={handleChange(`s${si}_f${fi}`)}
+                      placeholder={field.placeholder}
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
+                    />
+                  </div>
+                ))}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-2">
-                  How you normally price jobs
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.pricing}
-                  onChange={handleChange("pricing")}
-                  placeholder="Example: Minimum callout $120. Standard mow from $150 up to 400sqm. Add $40 for overgrown lawns."
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
-                />
-              </div>
-            </div>
-
-            {/* Where & When */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5">
-              <h2 className="text-base font-black text-slate-900">Where &amp; When You Work</h2>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-2">
-                  Service areas / suburbs
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.service_areas}
-                  onChange={handleChange("service_areas")}
-                  placeholder="Example: Perth, Fremantle, Joondalup, Midland, Rockingham"
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-2">
-                  Working hours
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.working_hours}
-                  onChange={handleChange("working_hours")}
-                  placeholder="Example: Mon-Fri 7am-5pm, Sat 8am-12pm, Sun closed."
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
-                />
-              </div>
-            </div>
-
-            {/* Booking Rules */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5">
-              <h2 className="text-base font-black text-slate-900">Booking Rules</h2>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-2">
-                  Booking limits or rules
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.booking_rules}
-                  onChange={handleChange("booking_rules")}
-                  placeholder="Example: Minimum 24 hr lead time."
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-2">
-                  Details we should collect from callers
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.caller_details}
-                  onChange={handleChange("caller_details")}
-                  placeholder="Example: Full name, address, mobile, service needed, preferred day/time, access details."
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
-                />
-              </div>
-            </div>
-
-            {/* Escalations */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5">
-              <h2 className="text-base font-black text-slate-900">Escalations</h2>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-2">
-                  When should we alert you immediately?
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.escalations}
-                  onChange={handleChange("escalations")}
-                  placeholder="Example: Urgent cleanups or complaints should be SMSed to me immediately on 0400 123 456."
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 resize-none bg-slate-50"
-                />
-              </div>
-            </div>
+            ))}
 
             {submitError && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">

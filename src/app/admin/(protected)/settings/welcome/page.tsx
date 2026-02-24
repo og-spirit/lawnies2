@@ -1,8 +1,21 @@
 import { getSettingsByCategory } from "@/lib/queries/settings";
 import { WelcomeSettingsForm } from "./form";
+import {
+  DEFAULT_FORM_SECTIONS,
+  type FormSection,
+} from "@/app/api/welcome/config/route";
 
 export default async function WelcomeSettingsPage() {
   const settings = await getSettingsByCategory("welcome");
+
+  let formSections: FormSection[] = DEFAULT_FORM_SECTIONS;
+  if (settings.form_sections) {
+    try {
+      formSections = JSON.parse(settings.form_sections);
+    } catch {
+      formSections = DEFAULT_FORM_SECTIONS;
+    }
+  }
 
   return (
     <div className="max-w-2xl">
@@ -19,6 +32,7 @@ export default async function WelcomeSettingsPage() {
           initialContent={settings.content || ""}
           initialVideoUrl={settings.video_url || ""}
           initialShowVideo={settings.show_video !== "false"}
+          initialSections={formSections}
         />
       </div>
     </div>

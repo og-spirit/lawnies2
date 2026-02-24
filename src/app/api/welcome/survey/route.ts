@@ -5,13 +5,7 @@ import { getOperatorByCheckoutSession } from "@/lib/queries/operators";
 
 const schema = z.object({
   session_id: z.string().optional().nullable(),
-  services: z.string().optional().default(""),
-  pricing: z.string().optional().default(""),
-  service_areas: z.string().optional().default(""),
-  working_hours: z.string().optional().default(""),
-  booking_rules: z.string().optional().default(""),
-  caller_details: z.string().optional().default(""),
-  escalations: z.string().optional().default(""),
+  responses: z.record(z.string(), z.string()),
 });
 
 export async function POST(request: NextRequest) {
@@ -23,7 +17,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
 
-    const { session_id, ...fields } = parsed.data;
+    const { session_id, responses } = parsed.data;
 
     let operatorId: string | null = null;
     if (session_id) {
@@ -33,7 +27,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    await saveOnboardingResponse(operatorId, session_id || null, fields);
+    await saveOnboardingResponse(operatorId, session_id || null, responses);
 
     return NextResponse.json({ success: true });
   } catch (error) {
