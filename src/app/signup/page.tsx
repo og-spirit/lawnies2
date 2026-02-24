@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const valuePoints = [
@@ -10,6 +10,8 @@ const valuePoints = [
   "You stay in control of scheduling",
 ];
 
+const GHL_WEBHOOK_URL = "https://services.leadconnectorhq.com/hooks/7AWfKrsJ8yR6Hg3YR8UM/webhook-trigger/fbc7825f-af9d-4281-b930-5e35f2422f6c";
+
 const nextSteps = [
   "We configure your services and pricing",
   "You forward your calls",
@@ -18,6 +20,25 @@ const nextSteps = [
 
 export default function SignupPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const contactId = urlParams.get("cid");
+    const opportunityId = urlParams.get("oid");
+
+    if (contactId || opportunityId) {
+      fetch(GHL_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contactId,
+          opportunityId,
+          page: "signup",
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    }
+  }, []);
   const formRef = useRef<HTMLElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

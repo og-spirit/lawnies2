@@ -1,11 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+const GHL_WEBHOOK_URL = "https://services.leadconnectorhq.com/hooks/7AWfKrsJ8yR6Hg3YR8UM/webhook-trigger/fbc7825f-af9d-4281-b930-5e35f2422f6c";
 
 export default function LandingPage() {
   const [jobValue, setJobValue] = useState(150);
   const [missedCalls, setMissedCalls] = useState(2);
   const lostPerMonth = jobValue * missedCalls * 4;
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const contactId = urlParams.get("cid");
+    const opportunityId = urlParams.get("oid");
+
+    if (contactId || opportunityId) {
+      fetch(GHL_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contactId,
+          opportunityId,
+          page: "homepage",
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const contactId = urlParams.get("cid");
+    const opportunityId = urlParams.get("oid");
+
+    if (contactId || opportunityId) {
+      document.querySelectorAll("a").forEach((link) => {
+        if (link.hostname === window.location.hostname) {
+          const url = new URL(link.href);
+          if (contactId) url.searchParams.set("cid", contactId);
+          if (opportunityId) url.searchParams.set("oid", opportunityId);
+          link.href = url.toString();
+        }
+      });
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">

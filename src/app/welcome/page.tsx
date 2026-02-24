@@ -3,6 +3,8 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
+const GHL_WEBHOOK_URL = "https://services.leadconnectorhq.com/hooks/7AWfKrsJ8yR6Hg3YR8UM/webhook-trigger/fbc7825f-af9d-4281-b930-5e35f2422f6c";
+
 interface WelcomeConfig {
   title: string;
   content: string;
@@ -20,6 +22,25 @@ function WelcomeContent() {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const contactId = urlParams.get("cid");
+    const opportunityId = urlParams.get("oid");
+
+    if (contactId || opportunityId) {
+      fetch(GHL_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contactId,
+          opportunityId,
+          page: "welcome",
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    }
+  }, []);
 
   useEffect(() => {
     fetch("/api/welcome/config")
