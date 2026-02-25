@@ -41,6 +41,3 @@ next-env.d.ts
 # vite (legacy)
 .vite
 
-# local docs (not for repo)
-SUPER_ADMIN.md
-DEPLOY_NOTES.md
