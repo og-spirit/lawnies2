@@ -56,7 +56,7 @@ const LandingPage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </a>
-            <p className="text-slate-400 text-sm">Setup in 2 days. No tech skills needed.</p>
+            <p className="text-slate-400 text-sm">Setup in 4 business days. No tech skills needed.</p>
           </div>
         </div>
       </section>
@@ -170,7 +170,7 @@ const LandingPage = () => {
           <h2 className="text-3xl md:text-4xl font-black text-center text-slate-900 mb-12">
             Simple. Controlled. Done.
           </h2>
-          <div className="grid grid-cols-3 gap-4 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
             {[
               {
                 step: '1',
