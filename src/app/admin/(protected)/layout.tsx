@@ -54,6 +54,12 @@ export default async function AdminLayout({
           >
             Complete Settings
           </Link>
+          <Link
+            href="/admin/settings/stripe"
+            className="text-slate-300 hover:text-white transition-colors"
+          >
+            Stripe Settings
+          </Link>
           <SignOutButton />
         </nav>
       </header>

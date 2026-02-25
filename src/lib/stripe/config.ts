@@ -41,9 +41,17 @@ const stripeWebhookSecret = isProduction
   ? process.env.STRIPE_WEBHOOK_SECRET_LIVE
   : process.env.STRIPE_WEBHOOK_SECRET_TEST;
 
-export const STRIPE_PRICE_ID = isProduction
-  ? process.env.STRIPE_PRICE_ID_LIVE
-  : process.env.STRIPE_PRICE_ID_TEST;
+export const STRIPE_PRICE_SETUP_ID = isProduction
+  ? process.env.STRIPE_PRICE_SETUP_LIVE
+  : process.env.STRIPE_PRICE_SETUP_TEST;
+
+export const STRIPE_PRICE_MONTHLY_ID = isProduction
+  ? process.env.STRIPE_PRICE_MONTHLY_LIVE
+  : process.env.STRIPE_PRICE_MONTHLY_TEST;
+
+export const STRIPE_TAX_RATE_ID = isProduction
+  ? process.env.STRIPE_TAX_RATE_LIVE
+  : process.env.STRIPE_TAX_RATE_TEST;
 
 export const STRIPE_CONFIG = {
   publishableKey: stripePublishableKey || "",
