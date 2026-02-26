@@ -335,11 +335,11 @@ const LandingPage = () => {
         </p>
         <p className="text-slate-500 text-xs mt-4">© 2026 Lawnies</p>
         <p className="text-slate-500 text-xs mt-1">
-          <a href="https://lawnies.com.au/privacy" className="text-slate-400 underline hover:text-white transition-colors">
+          <a href="/privacy" className="text-slate-400 underline hover:text-white transition-colors">
             Privacy Policy
           </a>
           <span className="mx-2 text-slate-600">|</span>
-          <a href="https://lawnies.com.au/terms" className="text-slate-400 underline hover:text-white transition-colors">
+          <a href="/terms" className="text-slate-400 underline hover:text-white transition-colors">
             Terms of Service
           </a>
         </p>
